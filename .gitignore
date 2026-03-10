@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 数据库（本地调试用，不上传）
+*.db
+*.sqlite
+*.sqlite3
+
+# Streamlit secrets（含 API Key，绝对不能上传）
+.streamlit/secrets.toml
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 环境变量
+.env
+.env.local
+
+# 日志
+*.log
+
+# Streamlit secrets 模板（保留示例文件）
+!.streamlit/secrets.toml.example
