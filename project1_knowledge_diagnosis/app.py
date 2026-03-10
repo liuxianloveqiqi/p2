@@ -91,7 +91,7 @@ st.markdown("""
     </div>
     <div style="text-align: center; padding: 5px; display: flex; align-items: center;">
         <h2>→</h2>
-    </div>    cd /Users/liuxian/pyProject/education-projects/p2/project2_classroom_analysis && streamlit run app.py --server.port 8502
+    </div>
     <div style="text-align: center; padding: 20px; background: #fce4ec; border-radius: 10px; flex: 1;">
         <h3>📚 Step 4</h3>
         <p>个性化学习推荐<br>AI 生成学习路径</p>
