@@ -3,9 +3,9 @@
 """
 import streamlit as st
 import pandas as pd
-import base64
 import os
 import sys
+from streamlit_echarts import st_pyecharts
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.db_manager import (get_all_sessions, get_session_dialogues,
@@ -68,11 +68,11 @@ if word_freq:
 
     with col2:
         st.markdown("**☁️ 词云图：**")
-        wc_base64 = generate_wordcloud_image(word_freq)
-        if wc_base64:
-            st.image(f"data:image/png;base64,{wc_base64}", use_container_width=True)
+        wc_chart = generate_wordcloud_image(word_freq)
+        if wc_chart:
+            st_pyecharts(wc_chart, height="400px")
         else:
-            st.warning("词云生成失败，请检查系统字体配置")
+            st.warning("词云生成失败")
 
         # 显示基本统计
         st.markdown(f"""

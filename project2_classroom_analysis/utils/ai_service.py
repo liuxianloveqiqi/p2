@@ -63,10 +63,10 @@ def demo_extract_themes(dialogues_text: str) -> dict:
 
     # 简单提取高频实词
     import jieba
-    words = list(jieba.cut(dialogues_text))
     from collections import Counter
-    stop = set('的了在是我有和就不人都一上也很到说要去你会着没有看好自己这他她们那些什么怎么为什么吗呢吧啊对请把被从用来过给让比而但然后大家同学们老师大小多少能可以还又再我们你们他们非常得地'.split('的'))
-    word_freq = Counter(w for w in words if len(w) >= 2 and w not in stop)
+    from utils.nlp_processor import STOP_WORDS
+    words = list(jieba.cut(dialogues_text))
+    word_freq = Counter(w for w in words if len(w) >= 2 and w not in STOP_WORDS)
     top_words = [w for w, _ in word_freq.most_common(10)]
 
     # 检测主题关键词

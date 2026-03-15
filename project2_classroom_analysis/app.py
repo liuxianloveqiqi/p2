@@ -122,7 +122,7 @@ st.markdown("""
 | Web 框架 | Streamlit |
 | AI 引擎 | OpenAI 兼容 API (GPT/GLM/DeepSeek) |
 | NLP | jieba 中文分词 |
-| 可视化 | Pyecharts + WordCloud + Plotly |
+| 可视化 | Pyecharts（含词云） |
 | 数据存储 | SQLite |
 
 """, unsafe_allow_html=True)

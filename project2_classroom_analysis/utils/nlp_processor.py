@@ -101,6 +101,34 @@ def extract_teacher_questions(dialogues: list) -> list:
     return questions
 
 
+def _classify_third_turn(content: str) -> str:
+    """
+    判断教师第三轮话语是 E（终止性评价）还是 F（延续性反馈）。
+    IRF 判定优先级：
+      1. 含有问号 → F（最强信号：明确追问）
+      2. 含有疑问词（作为实际提问使用）→ F
+      3. 含有延续/引导词 → F
+      4. 否则为终止性评价 → E
+    """
+    # 信号1：含问号 → 必然是追问，IRF
+    if '？' in content or '?' in content:
+        return 'F'
+
+    # 信号2：含疑问词（排除固定短语"什么是"之类的陈述性用法）
+    question_words = ['什么', '怎么', '为什么', '哪些', '哪', '如何', '几个', '多少', '是否', '能否']
+    if any(qw in content for qw in question_words):
+        return 'F'
+
+    # 信号3：含延续/引导词 → IRF
+    continuation_words = ['还有', '那么', '进一步', '继续', '接下来', '下一步', '再想想',
+                          '能不能', '可不可以', '谁来', '哪位', '请同学', '我们来', '试着']
+    if any(cw in content for cw in continuation_words):
+        return 'F'
+
+    # 默认：终止性评价 → IRE
+    return 'E'
+
+
 def analyze_ire_patterns(dialogues: list) -> list:
     """
     分析IRE/IRF互动模式
@@ -123,22 +151,8 @@ def analyze_ire_patterns(dialogues: list) -> list:
             # 查找教师评价/反馈
             if j < len(dialogues) and dialogues[j]['role'] == '教师' and pattern['R']:
                 content = dialogues[j]['content']
-                # 判断是评价(E)还是反馈(F)
-                eval_keywords = ['好', '对', '正确', '很好', '非常好', '不错', '准确', '完整', '到位']
-                feedback_keywords = ['那', '所以', '我们', '进一步', '再想想', '接下来']
-
-                has_eval = any(k in content[:10] for k in eval_keywords)
-                has_feedback = any(k in content for k in feedback_keywords)
-
-                if has_eval and has_feedback:
-                    pattern['E'] = content
-                    pattern['type'] = 'IRF'
-                elif has_eval:
-                    pattern['E'] = content
-                    pattern['type'] = 'IRE'
-                else:
-                    pattern['E'] = content
-                    pattern['type'] = 'IRF'
+                pattern['E'] = content
+                pattern['type'] = _classify_third_turn(content)
 
                 i = j
                 patterns.append(pattern)

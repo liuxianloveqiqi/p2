@@ -1,19 +1,9 @@
 """
 可视化辅助模块 - 课堂互动分析图表
 """
-from pyecharts.charts import Pie, Bar, Line, Radar
+from pyecharts.charts import Pie, Bar, Line, Radar, WordCloud as EchartsWordCloud
 from pyecharts import options as opts
 from pyecharts.globals import ThemeType
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
-import matplotlib
-import io
-import base64
-import os
-
-# 设置 matplotlib 中文字体
-matplotlib.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'SimHei', 'DejaVu Sans']
-matplotlib.rcParams['axes.unicode_minus'] = False
 
 
 def create_talk_ratio_pie(teacher_ratio: float, student_ratio: float, by: str = "字数"):
@@ -145,55 +135,27 @@ def create_interaction_radar(metrics: dict, session_name: str = ""):
     return radar
 
 
-def generate_wordcloud_image(word_freq: list, width=800, height=400) -> str:
+def generate_wordcloud_image(word_freq: list, width=800, height=400):
     """
-    生成词云图并返回 base64 编码
+    生成词云图（使用 pyecharts WordCloud，支持中文，返回 pyecharts 图表对象）
     word_freq: [(word, count), ...]
     """
-    # 尝试查找中文字体
-    font_paths = [
-        '/System/Library/Fonts/PingFang.ttc',
-        '/System/Library/Fonts/STHeiti Medium.ttc',
-        '/System/Library/Fonts/Hiragino Sans GB.ttc',
-        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
-        '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
-        'C:/Windows/Fonts/msyh.ttc',
-        'C:/Windows/Fonts/simhei.ttf',
-    ]
-    
-    font_path = None
-    for fp in font_paths:
-        if os.path.exists(fp):
-            font_path = fp
-            break
-
-    freq_dict = {word: count for word, count in word_freq}
-
-    wc_params = {
-        'width': width,
-        'height': height,
-        'background_color': 'white',
-        'max_words': 100,
-        'colormap': 'viridis',
-        'prefer_horizontal': 0.7,
-    }
-
-    if font_path:
-        wc_params['font_path'] = font_path
-
-    try:
-        wc = WordCloud(**wc_params)
-        wc.generate_from_frequencies(freq_dict)
-
-        fig, ax = plt.subplots(figsize=(width/100, height/100))
-        ax.imshow(wc, interpolation='bilinear')
-        ax.axis('off')
-
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png', bbox_inches='tight', dpi=100)
-        plt.close(fig)
-        buf.seek(0)
-
-        return base64.b64encode(buf.read()).decode('utf-8')
-    except Exception as e:
+    if not word_freq:
         return None
+
+    wc = (
+        EchartsWordCloud(
+            init_opts=opts.InitOpts(width=f"{width}px", height=f"{height}px")
+        )
+        .add(
+            series_name="关键词",
+            data_pair=word_freq,
+            word_size_range=[14, 80],
+            shape="circle",
+        )
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="课堂关键词词云"),
+            tooltip_opts=opts.TooltipOpts(is_show=True),
+        )
+    )
+    return wc
