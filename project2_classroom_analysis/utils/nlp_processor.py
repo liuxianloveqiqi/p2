@@ -103,30 +103,59 @@ def extract_teacher_questions(dialogues: list) -> list:
 
 def _classify_third_turn(content: str) -> str:
     """
-    判断教师第三轮话语是 E（终止性评价）还是 F（延续性反馈）。
-    IRF 判定优先级：
+        判断教师第三轮话语应归为 IRE 还是 IRF。
+        判定优先级：
       1. 含有问号 → F（最强信号：明确追问）
       2. 含有疑问词（作为实际提问使用）→ F
       3. 含有延续/引导词 → F
       4. 否则为终止性评价 → E
+
+    返回值统一为完整模式标签（IRE/IRF），
+    与页面统计逻辑保持一致，避免出现“全0”计数。
     """
     # 信号1：含问号 → 必然是追问，IRF
     if '？' in content or '?' in content:
-        return 'F'
+        return 'IRF'
 
     # 信号2：含疑问词（排除固定短语"什么是"之类的陈述性用法）
     question_words = ['什么', '怎么', '为什么', '哪些', '哪', '如何', '几个', '多少', '是否', '能否']
     if any(qw in content for qw in question_words):
-        return 'F'
+        return 'IRF'
 
     # 信号3：含延续/引导词 → IRF
     continuation_words = ['还有', '那么', '进一步', '继续', '接下来', '下一步', '再想想',
                           '能不能', '可不可以', '谁来', '哪位', '请同学', '我们来', '试着']
     if any(cw in content for cw in continuation_words):
-        return 'F'
+        return 'IRF'
 
     # 默认：终止性评价 → IRE
-    return 'E'
+    return 'IRE'
+
+
+def normalize_pattern_type(pattern_type: str) -> str:
+    """
+    统一模式类型标签，兼容历史版本中的 E/F 写法。
+    """
+    mapping = {
+        'E': 'IRE',
+        'F': 'IRF',
+        'IRE': 'IRE',
+        'IRF': 'IRF',
+        'IR': 'IR',
+    }
+    return mapping.get(pattern_type, pattern_type)
+
+
+def count_interaction_pattern_types(patterns: list) -> dict:
+    """
+    统计 IRE/IRF/IR 数量，并对历史类型标签做兼容。
+    """
+    normalized = [normalize_pattern_type(p.get('type', '')) for p in patterns]
+    return {
+        'ire_count': sum(1 for t in normalized if t == 'IRE'),
+        'irf_count': sum(1 for t in normalized if t == 'IRF'),
+        'ir_count': sum(1 for t in normalized if t == 'IR'),
+    }
 
 
 def analyze_ire_patterns(dialogues: list) -> list:
@@ -152,7 +181,7 @@ def analyze_ire_patterns(dialogues: list) -> list:
             if j < len(dialogues) and dialogues[j]['role'] == '教师' and pattern['R']:
                 content = dialogues[j]['content']
                 pattern['E'] = content
-                pattern['type'] = _classify_third_turn(content)
+                pattern['type'] = normalize_pattern_type(_classify_third_turn(content))
 
                 i = j
                 patterns.append(pattern)
@@ -190,18 +219,15 @@ def compute_interaction_metrics(dialogues: list) -> dict:
     talk_ratio = compute_talk_ratio(dialogues)
     questions = extract_teacher_questions(dialogues)
     ire_patterns = analyze_ire_patterns(dialogues)
-
-    ire_count = sum(1 for p in ire_patterns if p['type'] == 'IRE')
-    irf_count = sum(1 for p in ire_patterns if p['type'] == 'IRF')
-    ir_count = sum(1 for p in ire_patterns if p['type'] == 'IR')
+    pattern_counts = count_interaction_pattern_types(ire_patterns)
 
     return {
         **talk_ratio,
         'question_count': len(questions),
         'questions': questions,
-        'ire_count': ire_count,
-        'irf_count': irf_count,
-        'ir_count': ir_count,
+        'ire_count': pattern_counts['ire_count'],
+        'irf_count': pattern_counts['irf_count'],
+        'ir_count': pattern_counts['ir_count'],
         'total_patterns': len(ire_patterns),
         'patterns': ire_patterns,
         'teacher_dominance': talk_ratio['teacher_word_ratio'],

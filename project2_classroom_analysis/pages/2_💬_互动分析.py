@@ -12,7 +12,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.db_manager import (get_all_sessions, get_session_dialogues,
                                get_session_info, save_analysis_result,
                                get_analysis_result, init_db)
-from utils.nlp_processor import compute_talk_ratio, extract_teacher_questions, analyze_ire_patterns
+from utils.nlp_processor import (
+    compute_talk_ratio,
+    extract_teacher_questions,
+    analyze_ire_patterns,
+    count_interaction_pattern_types,
+    normalize_pattern_type,
+)
 from utils.chart_helper import create_talk_ratio_pie, create_bloom_bar, create_ire_bar
 from utils.ai_service import get_client, classify_bloom_questions, demo_classify_bloom_questions
 from streamlit_echarts import st_pyecharts
@@ -168,9 +174,10 @@ st.markdown("""
 patterns = analyze_ire_patterns(dialogues)
 
 if patterns:
-    ire_count = sum(1 for p in patterns if p['type'] == 'IRE')
-    irf_count = sum(1 for p in patterns if p['type'] == 'IRF')
-    ir_count = sum(1 for p in patterns if p['type'] == 'IR')
+    pattern_counts = count_interaction_pattern_types(patterns)
+    ire_count = pattern_counts['ire_count']
+    irf_count = pattern_counts['irf_count']
+    ir_count = pattern_counts['ir_count']
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -186,12 +193,13 @@ if patterns:
     # 详细模式展示
     st.markdown("**详细互动模式：**")
     for i, p in enumerate(patterns):
-        with st.expander(f"模式 {i+1}：{p['type']}"):
+        ptype = normalize_pattern_type(p.get('type', ''))
+        with st.expander(f"模式 {i+1}：{ptype}"):
             st.markdown(f"**🧑‍🏫 教师发起 (I)**：{p['I']}")
             for r in p['R']:
                 st.markdown(f"**👩‍🎓 学生回应 (R)**：{r}")
             if p['E']:
-                label = "评价 (E)" if p['type'] == 'IRE' else "反馈 (F)"
+                label = "评价 (E)" if ptype == 'IRE' else "反馈 (F)"
                 st.markdown(f"**🧑‍🏫 教师{label}**：{p['E']}")
 
     # 保存分析结果
